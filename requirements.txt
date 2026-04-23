@@ -1,24 +1,19 @@
 # ── Discord ───────────────────────────────────────────────────
-discord.py>=2.3.2
+discord.py==2.3.2
 
-# ── LangChain ─────────────────────────────────────────────────
-langchain>=0.3.0
-langchain-core>=0.3.0
-langchain-community>=0.3.0
+# ── LangChain — versions fixes pour éviter les conflits ───────
+langchain==0.2.16
+langchain-core==0.2.38
+langchain-community==0.2.16
 
-# ── Google Gemini (GRATUIT — aistudio.google.com) ─────────────
-langchain-google-genai>=2.0.0
-google-generativeai>=0.8.0
+# ── Google Gemini (GRATUIT) ───────────────────────────────────
+langchain-google-genai==1.0.10
+google-generativeai==0.7.2
 
-# ── Groq (GRATUIT alternatif — groq.com) ─────────────────────
-langchain-groq>=0.2.0
-groq>=0.11.0
+# ── Groq (GRATUIT alternatif) ─────────────────────────────────
+langchain-groq==0.1.9
+groq==0.11.0
 
 # ── Utilitaires ───────────────────────────────────────────────
-python-dotenv>=1.0.0
-requests>=2.31.0
-
-# ── Google Sheets (optionnel) ─────────────────────────────────
-# google-auth>=2.23.0
-# google-auth-httplib2>=0.2.0
-# google-api-python-client>=2.100.0
+python-dotenv==1.0.0
+requests==2.31.0
