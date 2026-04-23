@@ -1,20 +1,24 @@
 """
 agent.py — Cerveau de l'IA
-Utilise Google Gemini (100% GRATUIT, sans carte bancaire).
-Mémoire par utilisateur Discord.
+Utilise Google Gemini (100% GRATUIT).
+Compatible LangChain 0.2.x
 """
 
 import os
 from collections import defaultdict
 from dotenv import load_dotenv
+
+# ── Imports LangChain 0.2.x ───────────────────────────────────
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain.memory import ConversationBufferWindowMemory
 from langchain_core.prompts import PromptTemplate
+
 from tools import ALL_TOOLS
 
 load_dotenv()
 
-# ── LLM : Google Gemini GRATUIT ───────────────────────────────
+
+# ── LLM : Gemini gratuit ou Groq gratuit ──────────────────────
 def _build_llm():
     gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key   = os.getenv("GROQ_API_KEY")
@@ -22,7 +26,7 @@ def _build_llm():
     if gemini_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",   # Modèle gratuit le plus rapide
+            model="gemini-1.5-flash",
             google_api_key=gemini_key,
             temperature=0.2,
             convert_system_message_to_human=True,
@@ -30,41 +34,40 @@ def _build_llm():
     elif groq_key:
         from langchain_groq import ChatGroq
         return ChatGroq(
-            model="llama-3.3-70b-versatile",  # Gratuit sur Groq
+            model="llama-3.3-70b-versatile",
             groq_api_key=groq_key,
             temperature=0.2,
         )
     else:
         raise EnvironmentError(
             "❌ Aucune clé trouvée.\n"
-            "Ajoute GEMINI_API_KEY dans .env (gratuit sur aistudio.google.com)\n"
-            "Ou GROQ_API_KEY (gratuit sur groq.com)"
+            "Ajoute GEMINI_API_KEY dans les variables d'environnement Railway.\n"
+            "Clé gratuite sur : aistudio.google.com"
         )
 
 
-# ── Prompt système ────────────────────────────────────────────
+# ── Prompt ReAct ──────────────────────────────────────────────
 SYSTEM_PROMPT = """Tu es un assistant IA puissant intégré à Discord.
 Tu aides les utilisateurs à exécuter des tâches réelles : lire/écrire des fichiers,
-générer des applications, faire des recherches web, et bien plus.
+générer des applications complètes, faire des recherches web, et bien plus.
 
 Tu raisonnes étape par étape avant d'agir.
 Réponds toujours en français sauf demande contraire.
-Sois précis, concis et utile.
 
 Outils disponibles :
 {tools}
 
-Format OBLIGATOIRE :
+Format OBLIGATOIRE à respecter :
 Question: la question de l'utilisateur
-Thought: ma réflexion sur ce que je dois faire
-Action: nom_de_l_outil
+Thought: ma réflexion
+Action: nom_outil
 Action Input: entrée pour l'outil
-Observation: résultat de l'outil
+Observation: résultat
 ... (répéter si nécessaire)
-Thought: j'ai la réponse finale
-Final Answer: réponse complète à l'utilisateur
+Thought: j'ai la réponse
+Final Answer: réponse complète
 
-Noms d'outils disponibles : [{tool_names}]
+Outils disponibles : [{tool_names}]
 
 Historique :
 {chat_history}
@@ -73,30 +76,32 @@ Question: {input}
 {agent_scratchpad}"""
 
 
-# ── Mémoire par utilisateur ───────────────────────────────────
+# ── Mémoire par utilisateur Discord ───────────────────────────
 _memories: dict = defaultdict(
     lambda: ConversationBufferWindowMemory(
         memory_key="chat_history",
-        k=int(os.getenv("MEMORY_MAX_MESSAGES", 20)),
+        k=int(os.getenv("MEMORY_MAX_MESSAGES", "20")),
         return_messages=False,
     )
 )
 
-def get_memory(user_id: str):
+
+def get_memory(user_id: str) -> ConversationBufferWindowMemory:
     return _memories[str(user_id)]
 
-def clear_memory(user_id: str):
+
+def clear_memory(user_id: str) -> None:
     _memories.pop(str(user_id), None)
 
 
-# ── Construction de l'agent ───────────────────────────────────
+# ── Initialisation ────────────────────────────────────────────
 _llm = _build_llm()
 _prompt = PromptTemplate.from_template(SYSTEM_PROMPT)
 _react_agent = create_react_agent(llm=_llm, tools=ALL_TOOLS, prompt=_prompt)
 
 
+# ── Point d'entrée principal ──────────────────────────────────
 def run_agent(user_id: str, message: str) -> str:
-    """Point d'entrée : exécute l'agent pour un utilisateur Discord."""
     memory = get_memory(user_id)
     executor = AgentExecutor(
         agent=_react_agent,
