@@ -1,7 +1,6 @@
 """
 agent.py — Cerveau de l'IA
-Utilise Google Gemini (100% GRATUIT).
-Compatible LangChain 0.2.x + google-generativeai 0.8.x
+Gemini GRATUIT — Compatible LangChain 0.3.x
 """
 
 import os
@@ -17,7 +16,6 @@ from tools import ALL_TOOLS
 load_dotenv()
 
 
-# ── LLM ───────────────────────────────────────────────────────
 def _build_llm():
     gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key   = os.getenv("GROQ_API_KEY")
@@ -25,7 +23,7 @@ def _build_llm():
     if gemini_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="models/gemini-1.5-flash",   # ✅ Format complet avec "models/"
+            model="gemini-1.5-flash-latest",
             google_api_key=gemini_key,
             temperature=0.2,
             convert_system_message_to_human=True,
@@ -44,7 +42,6 @@ def _build_llm():
         )
 
 
-# ── Prompt ────────────────────────────────────────────────────
 SYSTEM_PROMPT = """Tu es un assistant IA puissant intégré à Discord.
 Tu aides les utilisateurs à exécuter des tâches réelles : lire/écrire des fichiers,
 générer des applications complètes, faire des recherches web, et bien plus.
@@ -74,7 +71,6 @@ Question: {input}
 {agent_scratchpad}"""
 
 
-# ── Mémoire par utilisateur ───────────────────────────────────
 _memories: dict = defaultdict(
     lambda: ConversationBufferWindowMemory(
         memory_key="chat_history",
@@ -90,13 +86,11 @@ def clear_memory(user_id: str) -> None:
     _memories.pop(str(user_id), None)
 
 
-# ── Initialisation ────────────────────────────────────────────
-_llm = _build_llm()
+_llm    = _build_llm()
 _prompt = PromptTemplate.from_template(SYSTEM_PROMPT)
 _react_agent = create_react_agent(llm=_llm, tools=ALL_TOOLS, prompt=_prompt)
 
 
-# ── Point d'entrée ────────────────────────────────────────────
 def run_agent(user_id: str, message: str) -> str:
     memory = get_memory(user_id)
     executor = AgentExecutor(
@@ -113,3 +107,4 @@ def run_agent(user_id: str, message: str) -> str:
         return result.get("output", "⚠️ Pas de réponse générée.")
     except Exception as e:
         return f"❌ Erreur agent : {e}"
+
