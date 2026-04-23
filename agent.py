@@ -1,7 +1,7 @@
 """
 agent.py — Cerveau de l'IA
 Utilise Google Gemini (100% GRATUIT).
-Compatible LangChain 0.2.x
+Compatible LangChain 0.2.x + google-generativeai 0.8.x
 """
 
 import os
@@ -17,7 +17,7 @@ from tools import ALL_TOOLS
 load_dotenv()
 
 
-# ── LLM : Gemini gratuit ou Groq gratuit ──────────────────────
+# ── LLM ───────────────────────────────────────────────────────
 def _build_llm():
     gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key   = os.getenv("GROQ_API_KEY")
@@ -25,7 +25,7 @@ def _build_llm():
     if gemini_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="gemini-pro",          # ✅ Modèle compatible v1beta
+            model="models/gemini-1.5-flash",   # ✅ Format complet avec "models/"
             google_api_key=gemini_key,
             temperature=0.2,
             convert_system_message_to_human=True,
@@ -39,13 +39,12 @@ def _build_llm():
         )
     else:
         raise EnvironmentError(
-            "❌ Aucune clé trouvée.\n"
-            "Ajoute GEMINI_API_KEY dans les variables Railway.\n"
+            "❌ Ajoute GEMINI_API_KEY dans les variables Railway.\n"
             "Clé gratuite sur : aistudio.google.com"
         )
 
 
-# ── Prompt ReAct ──────────────────────────────────────────────
+# ── Prompt ────────────────────────────────────────────────────
 SYSTEM_PROMPT = """Tu es un assistant IA puissant intégré à Discord.
 Tu aides les utilisateurs à exécuter des tâches réelles : lire/écrire des fichiers,
 générer des applications complètes, faire des recherches web, et bien plus.
@@ -56,7 +55,7 @@ Réponds toujours en français sauf demande contraire.
 Outils disponibles :
 {tools}
 
-Format OBLIGATOIRE à respecter :
+Format OBLIGATOIRE :
 Question: la question de l'utilisateur
 Thought: ma réflexion
 Action: nom_outil
@@ -75,7 +74,7 @@ Question: {input}
 {agent_scratchpad}"""
 
 
-# ── Mémoire par utilisateur Discord ───────────────────────────
+# ── Mémoire par utilisateur ───────────────────────────────────
 _memories: dict = defaultdict(
     lambda: ConversationBufferWindowMemory(
         memory_key="chat_history",
@@ -84,10 +83,8 @@ _memories: dict = defaultdict(
     )
 )
 
-
 def get_memory(user_id: str) -> ConversationBufferWindowMemory:
     return _memories[str(user_id)]
-
 
 def clear_memory(user_id: str) -> None:
     _memories.pop(str(user_id), None)
@@ -99,7 +96,7 @@ _prompt = PromptTemplate.from_template(SYSTEM_PROMPT)
 _react_agent = create_react_agent(llm=_llm, tools=ALL_TOOLS, prompt=_prompt)
 
 
-# ── Point d'entrée principal ──────────────────────────────────
+# ── Point d'entrée ────────────────────────────────────────────
 def run_agent(user_id: str, message: str) -> str:
     memory = get_memory(user_id)
     executor = AgentExecutor(
