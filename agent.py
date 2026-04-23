@@ -8,7 +8,6 @@ import os
 from collections import defaultdict
 from dotenv import load_dotenv
 
-# ── Imports LangChain 0.2.x ───────────────────────────────────
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain.memory import ConversationBufferWindowMemory
 from langchain_core.prompts import PromptTemplate
@@ -26,7 +25,7 @@ def _build_llm():
     if gemini_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-pro",          # ✅ Modèle compatible v1beta
             google_api_key=gemini_key,
             temperature=0.2,
             convert_system_message_to_human=True,
@@ -41,7 +40,7 @@ def _build_llm():
     else:
         raise EnvironmentError(
             "❌ Aucune clé trouvée.\n"
-            "Ajoute GEMINI_API_KEY dans les variables d'environnement Railway.\n"
+            "Ajoute GEMINI_API_KEY dans les variables Railway.\n"
             "Clé gratuite sur : aistudio.google.com"
         )
 
